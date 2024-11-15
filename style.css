@@ -67,16 +67,29 @@ body {
 }
 
 .circle {
-  background-color: #FF5733;
+  background-color: #ff7151;
   border-radius: 50%;
   color: white;
 }
 
 /* Hover Effect for Buttons */
-.tab:hover {
+.rectangle:hover {
   background-color: #3e8e41;
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
   transform: scale(1.1);
+}
+.circle:hover {
+  background-color: #da4e12;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+.rectangle:active{
+  background-color:#07710900 ;
+  transform: scale(1);
+}
+.circle:active{
+  background-color: #e74e07;
+  transform: scale(1);
 }
 
 /* Click Animation */

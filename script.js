@@ -1,6 +1,7 @@
 // Score variables
 let score = 0;
 const scoreDisplay = document.getElementById('score');
+const maxScore = 45;
 
 // Get all buttons (tabs) and avatar
 const tabs = document.querySelectorAll('.tab');
@@ -8,118 +9,132 @@ const avatar = document.getElementById('avatar-container');
 
 // Store positions for elements
 let tabPositions = [];
-let avatarPosition = { x: 0, y: 0 };
+let avatarPosition = randomPosition(); // Set initial position for avatar
 
 // Randomize initial position of element within the screen bounds
 function randomPosition() {
   return {
-    x: Math.random() * (window.innerWidth - 100),  // Avoid going off-screen
-    y: Math.random() * (window.innerHeight - 100)
+    x: Math.random() * (window.innerWidth - 50), // Smaller margin for harder gameplay
+    y: Math.random() * (window.innerHeight - 50),
   };
 }
 
-// Store initial random positions of tabs and avatar
+// Set initial random positions of tabs and avatar
 tabs.forEach((tab, index) => {
   tabPositions[index] = randomPosition();
 });
 
-avatarPosition = randomPosition();
+function initializePositions() {
+  tabs.forEach((tab, index) => {
+    tabPositions[index] = randomPosition();
+    tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
+  });
 
-// Function to move tabs away from each other and avoid overlap
+  avatar.style.transform = `translate(${avatarPosition.x}px, ${avatarPosition.y}px)`;
+}
+
+initializePositions();
+
+// Function to move tabs and avatar continuously
 function moveElements() {
-  const minDistance = 100; // Minimum distance between tabs
-  const moveSpeed = 0.2; // Increase the speed of the movement
-  const boundaryPadding = 10; // Padding from the edges of the screen
+  const minDistance = 120; // Larger minimum distance for harder gameplay
+  const moveSpeed = 0.4; // Increased speed for faster movement
+  const boundaryPadding = 5;
 
   tabs.forEach((tab, index) => {
     let moveX = tabPositions[index].x;
     let moveY = tabPositions[index].y;
 
-    // Check for overlap and keep tabs away from each other
     tabs.forEach((otherTab, otherIndex) => {
       if (otherIndex !== index) {
         const dx = tabPositions[index].x - tabPositions[otherIndex].x;
         const dy = tabPositions[index].y - tabPositions[otherIndex].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < minDistance) {
-          // Move away if too close
           moveX += (minDistance - distance) * (dx / distance);
           moveY += (minDistance - distance) * (dy / distance);
         }
       }
     });
 
-    // Apply screen boundaries: Make sure elements stay within screen width and height
-    if (moveX < boundaryPadding) moveX = boundaryPadding; // Avoid going too far left
-    if (moveX > window.innerWidth - 100 - boundaryPadding) moveX = window.innerWidth - 100 - boundaryPadding; // Avoid going too far right
-    if (moveY < boundaryPadding) moveY = boundaryPadding; // Avoid going too far top
-    if (moveY > window.innerHeight - 100 - boundaryPadding) moveY = window.innerHeight - 100 - boundaryPadding; // Avoid going too far bottom
+    moveX = Math.min(
+      Math.max(moveX, boundaryPadding),
+      window.innerWidth - 50 - boundaryPadding
+    );
+    moveY = Math.min(
+      Math.max(moveY, boundaryPadding),
+      window.innerHeight - 50 - boundaryPadding
+    );
 
     tabPositions[index].x += (moveX - tabPositions[index].x) * moveSpeed;
     tabPositions[index].y += (moveY - tabPositions[index].y) * moveSpeed;
 
-    // Apply new positions to each tab
     tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
   });
 
-  // Move the avatar in random direction
-  const avatarNewPos = randomPosition();
-  avatarPosition.x += (avatarNewPos.x - avatarPosition.x) * 0.05;
-  avatarPosition.y += (avatarNewPos.y - avatarPosition.y) * 0.05;
+  avatarPosition.x = Math.min(
+    Math.max(avatarPosition.x + (Math.random() - 0.5) * 3, boundaryPadding),
+    window.innerWidth - 50 - boundaryPadding
+  );
+  avatarPosition.y = Math.min(
+    Math.max(avatarPosition.y + (Math.random() - 0.5) * 3, boundaryPadding),
+    window.innerHeight - 50 - boundaryPadding
+  );
   avatar.style.transform = `translate(${avatarPosition.x}px, ${avatarPosition.y}px)`;
 
-  // Continue moving tabs and avatar
   requestAnimationFrame(moveElements);
 }
 
+// Periodic random teleportation for tabs
+setInterval(() => {
+  tabs.forEach((tab, index) => {
+    tabPositions[index] = randomPosition();
+    tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
+  });
+}, 2500); // Teleport every 3 seconds
+
 // Click event on avatar to win the game
 avatar.addEventListener('click', () => {
-  alert('You won! Final score: ' + score);
+  alert('You clicked the avatar! Final score: ' + score);
   resetGame();
 });
 
 // Click event on tabs to gain points
-tabs.forEach(tab => {
-  tab.addEventListener('click', (event) => {
-    // Increase score each time tab is clicked, even on repeated clicks
-    score += parseInt(tab.getAttribute('data-points'));
-    scoreDisplay.textContent = score;
+tabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => {
+    if (score < maxScore) {
+      score += parseInt(tab.getAttribute('data-points'));
+      if (score > maxScore) score = maxScore;
+      scoreDisplay.textContent = score;
 
-    // Apply click animation to tab
-    tab.classList.add('clicked');
+      tabPositions[index] = randomPosition();
+      tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
 
-    // Check if player wins
-    if (score >= 45) {
+      tab.classList.add('clicked');
+      setTimeout(() => tab.classList.remove('clicked'), 200);
+    }
+
+    if (score === maxScore) {
       setTimeout(() => {
-        alert('You won the game! Final score: ' + score);
+        alert('You reached the maximum score! Final score: ' + score);
         resetGame();
       }, 500);
     }
   });
 });
 
-// Function to reset the game
+// Reset the game
 function resetGame() {
   score = 0;
   scoreDisplay.textContent = score;
-  tabs.forEach(tab => tab.classList.remove('clicked'));
-  tabPositions = [];
-  avatarPosition = { x: 0, y: 0 };
-
-  // Randomize new positions
-  tabs.forEach((tab, index) => {
-    tabPositions[index] = randomPosition();
-  });
-  avatarPosition = randomPosition();
-
-  // Start continuous movement again
+  initializePositions();
   moveElements();
 }
 
-// Start the continuous floating movement
+// Start movement
 moveElements();
 
-// Move tabs away from cursor on hover (Repel effect)
+// Repel effect
 document.addEventListener('mousemove', (e) => {
   const mouseX = e.clientX;
   const mouseY = e.clientY;
@@ -131,11 +146,19 @@ document.addEventListener('mousemove', (e) => {
     const distX = mouseX - tabX;
     const distY = mouseY - tabY;
 
-    // If cursor is near the tab, move it away
-    if (Math.abs(distX) < 100 && Math.abs(distY) < 100) {
-      // Calculate the distance and move the tab away from the cursor
-      tabPositions[index].x -= distX * 0.1; // Increase this multiplier to make it move faster
-      tabPositions[index].y -= distY * 0.1; // Increase this multiplier to make it move faster
+    if (Math.abs(distX) < 150 && Math.abs(distY) < 150) {
+      tabPositions[index].x -= distX * 0.2;
+      tabPositions[index].y -= distY * 0.2;
+
+      tabPositions[index].x = Math.min(
+        Math.max(tabPositions[index].x, boundaryPadding),
+        window.innerWidth - 50 - boundaryPadding
+      );
+      tabPositions[index].y = Math.min(
+        Math.max(tabPositions[index].y, boundaryPadding),
+        window.innerHeight - 50 - boundaryPadding
+      );
+
       tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
     }
   });
