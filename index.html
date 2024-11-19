@@ -3,42 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Floating Tabs Game</title>
+  <title>Snake Game</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Dashboard to display points -->
-  <div id="dashboard">
-    <h2>Score: <span id="score">0</span> / 45</h2>
+  <h1>Snake Game</h1>
+  <div id="controls">
+    <label for="difficulty">Difficulty:</label>
+    <select id="difficulty">
+      <option value="180">Easy</option>
+      <option value="115" selected>Medium</option>
+      <option value="85">Hard</option>
+    </select>
+    <button id="startBtn">Start Game</button>
   </div>
-
-  <!-- Floating Profile -->
-  <div id="avatar-container">
-    <img id="avatar" src="avatar.jpg" alt="Profile Avatar" />
-  </div>
-
-  <!-- Floating tabs as buttons -->
-  <div id="tabs">
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-    <button class="tab rectangle" data-points="1">1 Point</button>
-    <button class="tab circle" data-points="2">2 Points</button>
-  </div>
+  <canvas id="gameCanvas"></canvas>
+  <p id="score">Score: 0</p>
 
   <script src="script.js"></script>
 </body>

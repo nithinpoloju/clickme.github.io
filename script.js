@@ -1,165 +1,181 @@
-// Score variables
-let score = 0;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const startBtn = document.getElementById('startBtn');
+const difficultySelect = document.getElementById('difficulty');
 const scoreDisplay = document.getElementById('score');
-const maxScore = 45;
 
-// Get all buttons (tabs) and avatar
-const tabs = document.querySelectorAll('.tab');
-const avatar = document.getElementById('avatar-container');
+canvas.width = 400;
+canvas.height = 400;
 
-// Store positions for elements
-let tabPositions = [];
-let avatarPosition = randomPosition(); // Set initial position for avatar
+const boxSize = 20; // Size of each box in the grid
+let snake = [{ x: 200, y: 200 }];
+let direction = { x: 0, y: 0 };
+let food = { x: 0, y: 0 };
+let gameInterval;
+let score = 0;
+let speed = 100;
 
-// Randomize initial position of element within the screen bounds
-function randomPosition() {
-  return {
-    x: Math.random() * (window.innerWidth - 50), // Smaller margin for harder gameplay
-    y: Math.random() * (window.innerHeight - 50),
-  };
-}
+function drawSnake() {
+  snake.forEach((segment, index) => {
+    if (index === 0) {
+      // Draw the head as a triangle
+      ctx.beginPath();
+      const centerX = segment.x + boxSize / 2;
+      const centerY = segment.y + boxSize / 2;
 
-// Set initial random positions of tabs and avatar
-tabs.forEach((tab, index) => {
-  tabPositions[index] = randomPosition();
-});
-
-function initializePositions() {
-  tabs.forEach((tab, index) => {
-    tabPositions[index] = randomPosition();
-    tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
-  });
-
-  avatar.style.transform = `translate(${avatarPosition.x}px, ${avatarPosition.y}px)`;
-}
-
-initializePositions();
-
-// Function to move tabs and avatar continuously
-function moveElements() {
-  const minDistance = 120; // Larger minimum distance for harder gameplay
-  const moveSpeed = 0.4; // Increased speed for faster movement
-  const boundaryPadding = 5;
-
-  tabs.forEach((tab, index) => {
-    let moveX = tabPositions[index].x;
-    let moveY = tabPositions[index].y;
-
-    tabs.forEach((otherTab, otherIndex) => {
-      if (otherIndex !== index) {
-        const dx = tabPositions[index].x - tabPositions[otherIndex].x;
-        const dy = tabPositions[index].y - tabPositions[otherIndex].y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < minDistance) {
-          moveX += (minDistance - distance) * (dx / distance);
-          moveY += (minDistance - distance) * (dy / distance);
-        }
+      if (direction.x === boxSize) {
+        // Facing right
+        ctx.moveTo(segment.x, segment.y);
+        ctx.lineTo(segment.x, segment.y + boxSize);
+        ctx.lineTo(segment.x + boxSize, centerY);
+      } else if (direction.x === -boxSize) {
+        // Facing left
+        ctx.moveTo(segment.x + boxSize, segment.y);
+        ctx.lineTo(segment.x + boxSize, segment.y + boxSize);
+        ctx.lineTo(segment.x, centerY);
+      } else if (direction.y === boxSize) {
+        // Facing down
+        ctx.moveTo(segment.x, segment.y);
+        ctx.lineTo(segment.x + boxSize, segment.y);
+        ctx.lineTo(centerX, segment.y + boxSize);
+      } else if (direction.y === -boxSize) {
+        // Facing up
+        ctx.moveTo(segment.x, segment.y + boxSize);
+        ctx.lineTo(segment.x + boxSize, segment.y + boxSize);
+        ctx.lineTo(centerX, segment.y);
+      } else {
+        // Default direction (right)
+        ctx.moveTo(segment.x, segment.y);
+        ctx.lineTo(segment.x, segment.y + boxSize);
+        ctx.lineTo(segment.x + boxSize, centerY);
       }
-    });
 
-    moveX = Math.min(
-      Math.max(moveX, boundaryPadding),
-      window.innerWidth - 50 - boundaryPadding
-    );
-    moveY = Math.min(
-      Math.max(moveY, boundaryPadding),
-      window.innerHeight - 50 - boundaryPadding
-    );
-
-    tabPositions[index].x += (moveX - tabPositions[index].x) * moveSpeed;
-    tabPositions[index].y += (moveY - tabPositions[index].y) * moveSpeed;
-
-    tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
+      ctx.fillStyle = '#ffff00'; // Head is yellow
+      ctx.fill();
+      ctx.closePath();
+    } else {
+      // Draw body as a circle
+      ctx.beginPath();
+      ctx.arc(
+        segment.x + boxSize / 2,
+        segment.y + boxSize / 2,
+        boxSize / 2,
+        0,
+        2 * Math.PI
+      );
+      ctx.fillStyle = '#32cd32'; // Body is green
+      ctx.fill();
+      ctx.strokeStyle = '#006400'; // Dark green border
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.closePath();
+    }
   });
-
-  avatarPosition.x = Math.min(
-    Math.max(avatarPosition.x + (Math.random() - 0.5) * 3, boundaryPadding),
-    window.innerWidth - 50 - boundaryPadding
-  );
-  avatarPosition.y = Math.min(
-    Math.max(avatarPosition.y + (Math.random() - 0.5) * 3, boundaryPadding),
-    window.innerHeight - 50 - boundaryPadding
-  );
-  avatar.style.transform = `translate(${avatarPosition.x}px, ${avatarPosition.y}px)`;
-
-  requestAnimationFrame(moveElements);
 }
 
-// Periodic random teleportation for tabs
-setInterval(() => {
-  tabs.forEach((tab, index) => {
-    tabPositions[index] = randomPosition();
-    tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
-  });
-}, 2500); // Teleport every 3 seconds
+function drawFood() {
+  ctx.beginPath();
+  ctx.arc(
+    food.x + boxSize / 2,
+    food.y + boxSize / 2,
+    boxSize / 2,
+    0,
+    2 * Math.PI
+  );
+  ctx.fillStyle = '#ff4500'; // Food is orange
+  ctx.fill();
+  ctx.strokeStyle = '#ff6347'; // Slightly darker border
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.closePath();
+}
 
-// Click event on avatar to win the game
-avatar.addEventListener('click', () => {
-  alert('You clicked the avatar! Final score: ' + score);
-  resetGame();
-});
+function randomFood() {
+  food.x = Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize;
+  food.y = Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize;
+}
 
-// Click event on tabs to gain points
-tabs.forEach((tab, index) => {
-  tab.addEventListener('click', () => {
-    if (score < maxScore) {
-      score += parseInt(tab.getAttribute('data-points'));
-      if (score > maxScore) score = maxScore;
-      scoreDisplay.textContent = score;
+function moveSnake() {
+  const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
-      tabPositions[index] = randomPosition();
-      tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
+  // Wrap around the canvas borders
+  if (head.x < 0) head.x = canvas.width - boxSize;
+  if (head.y < 0) head.y = canvas.height - boxSize;
+  if (head.x >= canvas.width) head.x = 0;
+  if (head.y >= canvas.height) head.y = 0;
 
-      tab.classList.add('clicked');
-      setTimeout(() => tab.classList.remove('clicked'), 200);
+  snake.unshift(head);
+
+  // Check if food is eaten
+  if (head.x === food.x && head.y === food.y) {
+    score += 10;
+    scoreDisplay.textContent = `Score: ${score}`;
+    randomFood();
+  } else {
+    snake.pop(); // Remove tail if no food is eaten
+  }
+}
+
+function checkCollision() {
+  const head = snake[0];
+
+  // Self collision
+  for (let i = 1; i < snake.length; i++) {
+    if (head.x === snake[i].x && head.y === snake[i].y) {
+      return true;
     }
+  }
 
-    if (score === maxScore) {
-      setTimeout(() => {
-        alert('You reached the maximum score! Final score: ' + score);
-        resetGame();
-      }, 500);
-    }
-  });
-});
+  return false;
+}
 
-// Reset the game
+function gameLoop() {
+  if (checkCollision()) {
+    clearInterval(gameInterval);
+    alert(`Game Over! Final Score: ${score}`);
+    resetGame();
+    return;
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSnake();
+  drawFood();
+  moveSnake();
+}
+
 function resetGame() {
+  snake = [{ x: 200, y: 200 }];
+  direction = { x: 0, y: 0 };
   score = 0;
-  scoreDisplay.textContent = score;
-  initializePositions();
-  moveElements();
+  scoreDisplay.textContent = `Score: ${score}`;
+  randomFood();
 }
 
-// Start movement
-moveElements();
+function changeDirection(event) {
+  const key = event.key;
+  const goingUp = direction.y === -boxSize;
+  const goingDown = direction.y === boxSize;
+  const goingLeft = direction.x === -boxSize;
+  const goingRight = direction.x === boxSize;
 
-// Repel effect
-document.addEventListener('mousemove', (e) => {
-  const mouseX = e.clientX;
-  const mouseY = e.clientY;
+  if (key === 'ArrowUp' && !goingDown) {
+    direction = { x: 0, y: -boxSize };
+  } else if (key === 'ArrowDown' && !goingUp) {
+    direction = { x: 0, y: boxSize };
+  } else if (key === 'ArrowLeft' && !goingRight) {
+    direction = { x: -boxSize, y: 0 };
+  } else if (key === 'ArrowRight' && !goingLeft) {
+    direction = { x: boxSize, y: 0 };
+  }
+}
 
-  tabs.forEach((tab, index) => {
-    const tabX = tabPositions[index].x;
-    const tabY = tabPositions[index].y;
+function startGame() {
+  speed = parseInt(difficultySelect.value);
+  resetGame();
+  randomFood();
+  gameInterval = setInterval(gameLoop, speed);
+}
 
-    const distX = mouseX - tabX;
-    const distY = mouseY - tabY;
-
-    if (Math.abs(distX) < 150 && Math.abs(distY) < 150) {
-      tabPositions[index].x -= distX * 0.2;
-      tabPositions[index].y -= distY * 0.2;
-
-      tabPositions[index].x = Math.min(
-        Math.max(tabPositions[index].x, boundaryPadding),
-        window.innerWidth - 50 - boundaryPadding
-      );
-      tabPositions[index].y = Math.min(
-        Math.max(tabPositions[index].y, boundaryPadding),
-        window.innerHeight - 50 - boundaryPadding
-      );
-
-      tab.style.transform = `translate(${tabPositions[index].x}px, ${tabPositions[index].y}px)`;
-    }
-  });
-});
+// Event listeners
+document.addEventListener('keydown', changeDirection);
+startBtn.addEventListener('click', startGame);
